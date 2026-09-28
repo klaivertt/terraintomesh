@@ -1,0 +1,9 @@
+{
+  "name": "fr.klaivert.terraintomesh",
+  "version": "0.1.0",
+  "displayName": "Terrain To Mesh",
+  "description": "export terrain to fbx",
+  "unity": "6000.4",
+  "keywords": ["terrain", "mesh", "obj", "export"],
+  "author": { "name": "klaivert" }
+}
