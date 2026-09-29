@@ -22,6 +22,8 @@ public class TerrainToMeshWindow : EditorWindow
         GetWindow<TerrainToMeshWindow>();
     }
 
+    bool showNoTerrainWarning;
+
     void OnGUI()
     {
         terrain = (Terrain)EditorGUILayout.ObjectField("Terrain", terrain, typeof(Terrain), true);
@@ -40,14 +42,18 @@ public class TerrainToMeshWindow : EditorWindow
                 MessageType.Info);
         }
 
+        if (showNoTerrainWarning && terrain == null)
+        {
+            EditorGUILayout.HelpBox("No terrain selected", MessageType.Warning);
+        }
+
         if (GUILayout.Button("Convert"))
         {
-            if (terrain == null)
+            showNoTerrainWarning = terrain == null;
+            if (terrain != null)
             {
-                Debug.LogWarning("No terrain selected");
-                return;
+                ConvertToMesh();
             }
-            ConvertToMesh();
         }
     }
 
