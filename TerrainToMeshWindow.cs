@@ -15,14 +15,14 @@ public class TerrainToMeshWindow : EditorWindow
 
     ExportFormat exportFormat;
     float polygonRatio = 100f;
+    bool showNoTerrainWarning;
+
 
     [MenuItem("Tools/Terrain To Mesh")]
     static void Open()
     {
         GetWindow<TerrainToMeshWindow>();
     }
-
-    bool showNoTerrainWarning;
 
     void OnGUI()
     {
@@ -40,6 +40,8 @@ public class TerrainToMeshWindow : EditorWindow
             "Triangles: " + tris.ToString("N0"),
             MessageType.Info);
         }
+
+
 
         if (showNoTerrainWarning && terrain == null)
         {
@@ -86,6 +88,8 @@ public class TerrainToMeshWindow : EditorWindow
         int t = 0;
 
         Vector3[] vertices = new Vector3[meshRes * meshRes];
+        float[,] meshHeights = new float[meshRes, meshRes]; 
+
         for (int z = 0; z < meshRes; z++)
         {
             for (int x = 0; x < meshRes; x++)
@@ -94,6 +98,7 @@ public class TerrainToMeshWindow : EditorWindow
                 float u = x / (float)(meshRes - 1);
                 float v = z / (float)(meshRes - 1);
                 float h = data.GetInterpolatedHeight(u, v);
+                meshHeights[z, x] = h;
                 vertices[index] = new Vector3(x * meshSpacingX, h, z * meshSpacingZ);
             }
         }
@@ -133,7 +138,7 @@ public class TerrainToMeshWindow : EditorWindow
             ExportToFbx(mesh, path);
         }
 
-        GenerateNormalMap(heights, res, spacingX, spacingZ, size, path + "_NormalMap.png");
+        GenerateNormalMap(meshHeights, meshRes, meshSpacingX, meshSpacingZ, path + "_NormalMap.png");
     }
 
     private void ExportToFbx(Mesh mesh, string path)
@@ -191,7 +196,7 @@ public class TerrainToMeshWindow : EditorWindow
         AssetDatabase.Refresh();
     }
 
-    private void GenerateNormalMap(float[,] heights, int res, float spacingX, float spacingZ, Vector3 size, string path)
+    private void GenerateNormalMap(float[,] heights, int res, float spacingX, float spacingZ, string path)
     {
         Texture2D texture = new Texture2D(res, res, TextureFormat.RGB24, false);
 
@@ -204,28 +209,24 @@ public class TerrainToMeshWindow : EditorWindow
                 int zDown = Mathf.Max(z - 1, 0);
                 int zUp = Mathf.Min(z + 1, res - 1);
 
-                float hLeft = heights[z, xLeft] * size.y;
-                float hRight = heights[z, xRight] * size.y;
-                float hDown = heights[zDown, x] * size.y;
-                float hUp = heights[zUp, x] * size.y;
+                float hLeft = heights[z, xLeft];
+                float hRight = heights[z, xRight];
+                float hDown = heights[zDown, x];
+                float hUp = heights[zUp, x];
 
                 float slopeX = (hLeft - hRight) / (2 * spacingX);
                 float slopeZ = (hDown - hUp) / (2 * spacingZ);
 
-                Vector3 normal = new Vector3(slopeX, 1, slopeZ);
-                normal.Normalize();
+                Vector3 normal = new Vector3(slopeX, 1, slopeZ).normalized;
 
-                float r = normal.x * 0.5f + 0.5f;
-                float g = normal.z * 0.5f + 0.5f;
-                float b = normal.y * 0.5f + 0.5f;
-
-                texture.SetPixel(x, z, new Color(r, g, b));
+                texture.SetPixel(x, z, new Color(
+                    normal.x * 0.5f + 0.5f,
+                    normal.z * 0.5f + 0.5f,
+                    normal.y * 0.5f + 0.5f));
             }
         }
 
         texture.Apply();
-
-        byte[] png = texture.EncodeToPNG();
-        System.IO.File.WriteAllBytes(path, png);
+        System.IO.File.WriteAllBytes(path, texture.EncodeToPNG());
     }
 }
