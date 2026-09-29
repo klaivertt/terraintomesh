@@ -2,7 +2,7 @@
 
 Un plugin Unity Editor qui convertit un Terrain Unity (qui n'a pas de mesh natif) en un vrai mesh 3D, exportable en **OBJ**, **FBX** ou **HEIGHT_MAP**, avec génération automatique d'une normal map à partir de la heightmap.
 
-🌟 Soutenez le projet !
+🌟 Soutenez le projet ! Si ce projet vous est utile n'hésitez pas à lui laisser une étoile (Star)
 
 Si cet outil vous fait gagner du temps ou vous est utile dans vos projets Unity, laissez une étoile (Star) sur le dépôt GitHub ! C'est gratuit, cela prend une seconde et cela aide grandement le projet à gagner en visibilité auprès de la communauté. Merci pour votre soutien !
 
@@ -25,7 +25,7 @@ English
 
 A Unity Editor plugin that converts a Unity Terrain (which lacks a native mesh) into a true 3D mesh, exportable as **OBJ**, **FBX**, or **HEIGHT_MAP**, with automatic normal map generation from the heightmap.
 
-🌟 Support the Project!
+🌟 Support the Project!If you find this project useful, please consider giving it a star
 
 If this tool saves you time or helps with your Unity projects, please consider giving it a star on GitHub! It's free, takes a second, and greatly helps increase the project's visibility in the community. Thank you for your support!
 
