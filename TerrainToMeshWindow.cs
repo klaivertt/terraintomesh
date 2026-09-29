@@ -36,10 +36,9 @@ public class TerrainToMeshWindow : EditorWindow
             int fullRes = terrain.terrainData.heightmapResolution;
             int meshRes = GetMeshResolution(fullRes);
             long tris = (long)(meshRes - 1) * (meshRes - 1) * 2;
-            EditorGUILayout.HelpBox(
-                "Maillage : " + meshRes + " x " + meshRes + " sommets\n" +
-                "Triangles : " + tris.ToString("N0"),
-                MessageType.Info);
+            EditorGUILayout.HelpBox("Mesh: " + meshRes + " x " + meshRes + " vertices\n" +
+            "Triangles: " + tris.ToString("N0"),
+            MessageType.Info);
         }
 
         if (showNoTerrainWarning && terrain == null)
