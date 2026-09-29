@@ -10,12 +10,14 @@ public class TerrainToMeshWindow : EditorWindow
     public enum ExportFormat
     {
         OBJ,
-        FBX
+        FBX,
+        HEIGHT_MAP
     }
 
     ExportFormat exportFormat;
     float polygonRatio = 100f;
     bool showNoTerrainWarning;
+    bool exportNormal;
 
 
     [MenuItem("Tools/Terrain To Mesh")]
@@ -30,6 +32,9 @@ public class TerrainToMeshWindow : EditorWindow
         exportFormat = (ExportFormat)EditorGUILayout.EnumPopup("Export Format", exportFormat);
 
         polygonRatio = EditorGUILayout.Slider("Polygon Ratio (%)", polygonRatio, 1f, 100f);
+
+
+        exportNormal = EditorGUILayout.Toggle("Export Normal", exportNormal);
 
         if (terrain != null && terrain.terrainData != null)
         {
@@ -80,6 +85,12 @@ public class TerrainToMeshWindow : EditorWindow
         int meshRes = GetMeshResolution(res);
         float meshSpacingX = size.x / (meshRes - 1);
         float meshSpacingZ = size.z / (meshRes - 1);
+
+        if (exportFormat == ExportFormat.HEIGHT_MAP)
+        {
+            ExportHeightMapPng(meshRes, Application.dataPath + "/" + data.name + "_HeightMap");
+            return;
+        }
 
         Debug.Log("Heightmap res : " + res + " | Mesh res : " + meshRes +
                   " | Triangles : " + ((meshRes - 1) * (meshRes - 1) * 2));
@@ -138,7 +149,10 @@ public class TerrainToMeshWindow : EditorWindow
             ExportToFbx(mesh, path);
         }
 
-        GenerateNormalMap(meshHeights, meshRes, meshSpacingX, meshSpacingZ, path + "_NormalMap.png");
+        if (exportNormal)
+        {
+            GenerateNormalMap(meshHeights, meshRes, meshSpacingX, meshSpacingZ, path + "_NormalMap.png");
+        }
     }
 
     private void ExportToFbx(Mesh mesh, string path)
@@ -308,5 +322,27 @@ public class TerrainToMeshWindow : EditorWindow
 
         texture.Apply();
         System.IO.File.WriteAllBytes(path, texture.EncodeToPNG());
+    }
+
+    private void ExportHeightMapPng(int meshRes, string path)
+    {
+        float maxHeight = data.size.y;
+        Texture2D tex = new Texture2D(meshRes, meshRes, TextureFormat.RGB24, false);
+
+        for (int z = 0; z < meshRes; z++)
+        {
+            for (int x = 0; x < meshRes; x++)
+            {
+                float u = x / (float)(meshRes - 1);
+                float v = z / (float)(meshRes - 1);
+                float h01 = Mathf.Clamp01(data.GetInterpolatedHeight(u, v) / maxHeight);
+                tex.SetPixel(x, z, new Color(h01, h01, h01));
+            }
+        }
+
+        tex.Apply();
+        File.WriteAllBytes(path + ".png", tex.EncodeToPNG());
+        DestroyImmediate(tex);
+        AssetDatabase.Refresh();
     }
 }
