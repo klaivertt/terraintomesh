@@ -1,6 +1,6 @@
 # Terrain To Mesh
 
-Un plugin Unity Editor qui convertit un `Terrain` Unity (qui n'a pas de mesh natif) en un vrai mesh 3D, exportable en **OBJ** ou **FBX**, avec génération automatique d'une **normal map** à partir de la heightmap.
+Un plugin Unity Editor qui convertit un `Terrain` Unity (qui n'a pas de mesh natif) en un vrai mesh 3D, exportable en **OBJ** ou **FBX** ou **HEIGHT_MAP**, avec génération automatique d'une **normal map** à partir de la heightmap.
 
 ## Installation
 
