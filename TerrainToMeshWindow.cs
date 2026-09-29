@@ -111,11 +111,11 @@ public class TerrainToMeshWindow : EditorWindow
         string path = Application.dataPath + "/" + data.name;
         if (exportFormat == ExportFormat.OBJ)
         {
-            ExportToObj(mesh, path);
+            ExportToObj(mesh, path + ".obj");
         }
         else if (exportFormat == ExportFormat.FBX)
         {
-            ExportToFbx(mesh, path + ".obj");
+            ExportToFbx(mesh, path);
         }
 
         GenerateNormalMap(heights, res, spacingX, spacingZ, size, path + "_NormalMap.png");
@@ -130,30 +130,50 @@ public class TerrainToMeshWindow : EditorWindow
         gO.AddComponent<MeshRenderer>().sharedMaterial = new Material(Shader.Find("Universal Render Pipeline/Lit"));
 
         ModelExporter.ExportObject(path, gO);
-        DestroyImmediate(gO);
+        //DestroyImmediate(gO);
     }
 
     private void ExportToObj(Mesh mesh, string path)
     {
-        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        var sb = new System.Text.StringBuilder();
 
         Vector3[] vertices = mesh.vertices;
+        Vector3[] normals = mesh.normals;
         int[] triangles = mesh.triangles;
+
+        sb.AppendLine("# Terrain export");
+        sb.AppendLine("o " + data.name);
 
         foreach (Vector3 v in vertices)
         {
-            sb.AppendLine("v " + v.x + " " + v.y + " " + v.z);
+            sb.Append("v ")
+              .Append((-v.x).ToString("F6", inv)).Append(' ')
+              .Append(v.y.ToString("F6", inv)).Append(' ')
+              .Append(v.z.ToString("F6", inv)).Append('\n');
+        }
+
+        foreach (Vector3 n in normals)
+        {
+            sb.Append("vn ")
+              .Append((-n.x).ToString("F6", inv)).Append(' ')
+              .Append(n.y.ToString("F6", inv)).Append(' ')
+              .Append(n.z.ToString("F6", inv)).Append('\n');
         }
 
         for (int i = 0; i < triangles.Length; i += 3)
         {
             int a = triangles[i] + 1;
-            int b = triangles[i + 1] + 1;
-            int c = triangles[i + 2] + 1;
-            sb.AppendLine("f " + a + " " + b + " " + c);
+            int b = triangles[i + 2] + 1; 
+            int c = triangles[i + 1] + 1;
+            sb.Append("f ")
+              .Append(a).Append("//").Append(a).Append(' ')
+              .Append(b).Append("//").Append(b).Append(' ')
+              .Append(c).Append("//").Append(c).Append('\n');
         }
 
         System.IO.File.WriteAllText(path, sb.ToString());
+        AssetDatabase.Refresh();
     }
 
     private void GenerateNormalMap(float[,] heights, int res, float spacingX, float spacingZ, Vector3 size, string path)

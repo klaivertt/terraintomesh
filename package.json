@@ -4,6 +4,17 @@
   "displayName": "Terrain To Mesh",
   "description": "export terrain to fbx",
   "unity": "6000.4",
-  "keywords": ["terrain", "mesh", "obj", "export"],
-  "author": { "name": "klaivert" }
+  "keywords": [
+    "terrain",
+    "mesh",
+    "obj",
+    "export"
+  ],
+  "author": {
+    "name": "klaivert"
+  }, 
+  "dependencies": {
+    "com.unity.formats.fbx": "5.1.1"
+  },
+  "_fingerprint": "dc8fd725ab7fe56d04d88d001fa25d7e12ba7afb"
 }

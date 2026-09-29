@@ -2,7 +2,7 @@
     "name": "TerrainToMesh",
     "rootNamespace": "",
     "references": [
-        "GUID:0f9e8f73c69964f1e8176f9a0b86f9b2"
+        "Unity.Formats.Fbx.Editor"
     ],
     "includePlatforms": [
         "Editor"
