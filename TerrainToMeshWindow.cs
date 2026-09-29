@@ -19,6 +19,8 @@ public class TerrainToMeshWindow : EditorWindow
     bool showNoTerrainWarning;
     bool exportNormal;
 
+    string outputName = "";
+    string outputFolder = "";
 
     [MenuItem("Tools/Terrain To Mesh")]
     static void Open()
@@ -33,8 +35,32 @@ public class TerrainToMeshWindow : EditorWindow
 
         polygonRatio = EditorGUILayout.Slider("Polygon Ratio (%)", polygonRatio, 1f, 100f);
 
+        if (string.IsNullOrEmpty(outputFolder))
+        {
+            outputFolder = Application.dataPath;
+        }
 
         exportNormal = EditorGUILayout.Toggle("Export Normal", exportNormal);
+
+        outputName = EditorGUILayout.TextField("Output Name", outputName);
+
+        if (string.IsNullOrWhiteSpace(outputName))
+        {
+            EditorGUILayout.LabelField(" ", "Default: " + GetOutputName(), EditorStyles.miniLabel);
+        }
+
+        EditorGUILayout.BeginHorizontal();
+        outputFolder = EditorGUILayout.TextField("Output Folder", outputFolder);
+        if (GUILayout.Button("Browse", GUILayout.Width(65)))
+        {
+            string selected = EditorUtility.OpenFolderPanel("Choose output folder", outputFolder, "");
+            if (!string.IsNullOrEmpty(selected))
+            {
+                outputFolder = selected;
+                GUI.FocusControl(null);
+            }
+        }
+        EditorGUILayout.EndHorizontal();
 
         if (terrain != null && terrain.terrainData != null)
         {
@@ -88,7 +114,7 @@ public class TerrainToMeshWindow : EditorWindow
 
         if (exportFormat == ExportFormat.HEIGHT_MAP)
         {
-            ExportHeightMapPng(meshRes, Application.dataPath + "/" + data.name + "_HeightMap");
+            ExportHeightMapPng(meshRes, GetOutputPath() + "_HeightMap");
             return;
         }
 
@@ -139,19 +165,18 @@ public class TerrainToMeshWindow : EditorWindow
         mesh.triangles = triangles;
         mesh.RecalculateNormals();
 
-        string path = Application.dataPath + "/" + data.name;
         if (exportFormat == ExportFormat.OBJ)
         {
-            ExportToObj(mesh, path + ".obj");
+            ExportToObj(mesh, GetOutputPath() + ".obj");
         }
         else if (exportFormat == ExportFormat.FBX)
         {
-            ExportToFbx(mesh, path);
+            ExportToFbx(mesh, GetOutputPath());
         }
 
         if (exportNormal)
         {
-            GenerateNormalMap(meshHeights, meshRes, meshSpacingX, meshSpacingZ, path + "_NormalMap.png");
+            GenerateNormalMap(meshHeights, meshRes, meshSpacingX, meshSpacingZ, GetOutputPath() + "_NormalMap.png");
         }
     }
 
@@ -344,5 +369,32 @@ public class TerrainToMeshWindow : EditorWindow
         File.WriteAllBytes(path + ".png", tex.EncodeToPNG());
         DestroyImmediate(tex);
         AssetDatabase.Refresh();
+    }
+
+    private string GetOutputName()
+    {
+        if (!string.IsNullOrWhiteSpace(outputName))
+        {
+            return outputName.Trim();
+        }
+
+        return terrain != null ? terrain.terrainData.name : "Terrain";
+    }
+
+    private string GetOutputPath()
+    {
+        string name = GetOutputName();
+
+        foreach (char c in Path.GetInvalidFileNameChars())
+        {
+            name = name.Replace(c, '_');
+        }
+
+        if (!Directory.Exists(outputFolder))
+        {
+            Directory.CreateDirectory(outputFolder);
+        }
+        
+        return Path.Combine(outputFolder, name);
     }
 }
