@@ -18,8 +18,9 @@ Choisis "Add package from git URL...".
 
 Colle l'URL suivante :
 
+```
 https://github.com/klaivertt/terraintomesh.git
-
+```
 
 English
 
@@ -41,4 +42,6 @@ Choose "Add package from git URL...".
 
 Paste the following URL:
 
+```
 https://github.com/klaivertt/terraintomesh.git
+```
