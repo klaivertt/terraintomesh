@@ -88,7 +88,7 @@ public class TerrainToMeshWindow : EditorWindow
         int t = 0;
 
         Vector3[] vertices = new Vector3[meshRes * meshRes];
-        float[,] meshHeights = new float[meshRes, meshRes]; 
+        float[,] meshHeights = new float[meshRes, meshRes];
 
         for (int z = 0; z < meshRes; z++)
         {
@@ -150,7 +150,7 @@ public class TerrainToMeshWindow : EditorWindow
         gO.AddComponent<MeshRenderer>().sharedMaterial = new Material(Shader.Find("Universal Render Pipeline/Lit"));
 
         ModelExporter.ExportObject(path, gO);
-        //DestroyImmediate(gO);
+        DestroyImmediate(gO);
     }
 
     private void ExportToObj(Mesh mesh, string path)
@@ -162,39 +162,119 @@ public class TerrainToMeshWindow : EditorWindow
         Vector3[] normals = mesh.normals;
         int[] triangles = mesh.triangles;
 
-        sb.AppendLine("# Terrain export");
-        sb.AppendLine("o " + data.name);
+        int totalSteps = vertices.Length + normals.Length + (triangles.Length / 3);
+        int currentStep = 0;
 
-        foreach (Vector3 v in vertices)
+        System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+        try
         {
-            sb.Append("v ")
-              .Append((-v.x).ToString("F6", inv)).Append(' ')
-              .Append(v.y.ToString("F6", inv)).Append(' ')
-              .Append(v.z.ToString("F6", inv)).Append('\n');
-        }
+            sb.AppendLine("# Terrain export");
+            sb.AppendLine("o " + data.name);
 
-        foreach (Vector3 n in normals)
+            for (int i = 0; i < vertices.Length; i++)
+            {
+                Vector3 v = vertices[i];
+
+                sb.Append("v ")
+                  .Append((-v.x).ToString("F6", inv)).Append(' ')
+                  .Append(v.y.ToString("F6", inv)).Append(' ')
+                  .Append(v.z.ToString("F6", inv)).Append('\n');
+
+                currentStep++;
+
+                if (i % 1000 == 0 || i == vertices.Length - 1)
+                {
+                    float progress = (float)currentStep / totalSteps;
+
+                    UnityEditor.EditorUtility.DisplayProgressBar(
+                        "Export OBJ",
+                        $"Export des vertices... {i + 1:N0} / {vertices.Length:N0}\n" +
+                        $"Temps écoulé : {stopwatch.Elapsed:hh\\:mm\\:ss}",
+                        progress
+                    );
+                }
+            }
+
+            for (int i = 0; i < normals.Length; i++)
+            {
+                Vector3 n = normals[i];
+
+                sb.Append("vn ")
+                  .Append((-n.x).ToString("F6", inv)).Append(' ')
+                  .Append(n.y.ToString("F6", inv)).Append(' ')
+                  .Append(n.z.ToString("F6", inv)).Append('\n');
+
+                currentStep++;
+
+                if (i % 1000 == 0 || i == normals.Length - 1)
+                {
+                    float progress = (float)currentStep / totalSteps;
+
+                    UnityEditor.EditorUtility.DisplayProgressBar(
+                        "Export OBJ",
+                        $"Export des normales... {i + 1:N0} / {normals.Length:N0}\n" +
+                        $"Temps écoulé : {stopwatch.Elapsed:hh\\:mm\\:ss}",
+                        progress
+                    );
+                }
+            }
+
+            int faceCount = triangles.Length / 3;
+
+            for (int i = 0; i < triangles.Length; i += 3)
+            {
+                int a = triangles[i] + 1;
+                int b = triangles[i + 2] + 1;
+                int c = triangles[i + 1] + 1;
+
+                sb.Append("f ")
+                  .Append(a).Append("//").Append(a).Append(' ')
+                  .Append(b).Append("//").Append(b).Append(' ')
+                  .Append(c).Append("//").Append(c).Append('\n');
+
+                currentStep++;
+
+                if (i % 3000 == 0 || i + 3 >= triangles.Length)
+                {
+                    int faceIndex = i / 3 + 1;
+                    float progress = (float)currentStep / totalSteps;
+
+                    UnityEditor.EditorUtility.DisplayProgressBar(
+                        "Export OBJ",
+                        $"Export des faces... {faceIndex:N0} / {faceCount:N0}\n" +
+                        $"Temps écoulé : {stopwatch.Elapsed:hh\\:mm\\:ss}",
+                        progress
+                    );
+                }
+            }
+
+            UnityEditor.EditorUtility.DisplayProgressBar(
+                "Export OBJ",
+                $"Écriture du fichier sur le disque...\n" +
+                $"Temps écoulé : {stopwatch.Elapsed:hh\\:mm\\:ss}",
+                0.99f
+            );
+
+            System.IO.File.WriteAllText(path, sb.ToString());
+
+            UnityEditor.EditorUtility.DisplayProgressBar(
+                "Export OBJ",
+                $"Actualisation de l'Asset Database...\n" +
+                $"Temps écoulé : {stopwatch.Elapsed:hh\\:mm\\:ss}",
+                1.0f
+            );
+
+            AssetDatabase.Refresh();
+        }
+        finally
         {
-            sb.Append("vn ")
-              .Append((-n.x).ToString("F6", inv)).Append(' ')
-              .Append(n.y.ToString("F6", inv)).Append(' ')
-              .Append(n.z.ToString("F6", inv)).Append('\n');
-        }
+            stopwatch.Stop();
 
-        for (int i = 0; i < triangles.Length; i += 3)
-        {
-            int a = triangles[i] + 1;
-            int b = triangles[i + 2] + 1;
-            int c = triangles[i + 1] + 1;
-            sb.Append("f ")
-              .Append(a).Append("//").Append(a).Append(' ')
-              .Append(b).Append("//").Append(b).Append(' ')
-              .Append(c).Append("//").Append(c).Append('\n');
+            UnityEditor.EditorUtility.ClearProgressBar();
         }
-
-        System.IO.File.WriteAllText(path, sb.ToString());
-        AssetDatabase.Refresh();
     }
+
 
     private void GenerateNormalMap(float[,] heights, int res, float spacingX, float spacingZ, string path)
     {
