@@ -1,10 +1,7 @@
-using Microsoft.SqlServer.Server;
 using System.IO;
-using System.Xml.Serialization;
 using UnityEditor;
 using UnityEditor.Formats.Fbx.Exporter;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 public class TerrainToMeshWindow : EditorWindow
 {
@@ -15,20 +12,33 @@ public class TerrainToMeshWindow : EditorWindow
         OBJ,
         FBX
     }
+
     ExportFormat exportFormat;
+    float polygonRatio = 100f;
 
     [MenuItem("Tools/Terrain To Mesh")]
     static void Open()
     {
         GetWindow<TerrainToMeshWindow>();
     }
+
     void OnGUI()
     {
-        // here element interface for the gui
-        // its refresh with time elapsed 
         terrain = (Terrain)EditorGUILayout.ObjectField("Terrain", terrain, typeof(Terrain), true);
-
         exportFormat = (ExportFormat)EditorGUILayout.EnumPopup("Export Format", exportFormat);
+
+        polygonRatio = EditorGUILayout.Slider("Polygon Ratio (%)", polygonRatio, 1f, 100f);
+
+        if (terrain != null && terrain.terrainData != null)
+        {
+            int fullRes = terrain.terrainData.heightmapResolution;
+            int meshRes = GetMeshResolution(fullRes);
+            long tris = (long)(meshRes - 1) * (meshRes - 1) * 2;
+            EditorGUILayout.HelpBox(
+                "Maillage : " + meshRes + " x " + meshRes + " sommets\n" +
+                "Triangles : " + tris.ToString("N0"),
+                MessageType.Info);
+        }
 
         if (GUILayout.Button("Convert"))
         {
@@ -41,63 +51,64 @@ public class TerrainToMeshWindow : EditorWindow
         }
     }
 
+    int GetMeshResolution(int fullRes)
+    {
+        float ratio = polygonRatio / 100f;
+        int meshRes = Mathf.RoundToInt((fullRes - 1) * Mathf.Sqrt(ratio)) + 1;
+        return Mathf.Clamp(meshRes, 2, fullRes);
+    }
+
     private void ConvertToMesh()
     {
         Debug.Log("Terrain : " + terrain.name);
         data = terrain.terrainData;
-        //size of map in point 
+
         int res = data.heightmapResolution;
         float[,] heights = data.GetHeights(0, 0, res, res);
-
-        //size of map in m 
         Vector3 size = data.size;
-
-        Debug.Log("Terrain resolution in point : " + res);
-        Debug.Log("Terrain resolution in metter : X(Width): " + size.x + ", Y(Height): " + size.y + ", Z(Length): " + size.z);
 
         float spacingX = size.x / (res - 1);
         float spacingZ = size.z / (res - 1);
-        Debug.Log("Terrain intervals size : Spacing X :" + spacingX + ", Spacing Z : " + spacingZ);
 
-        //mesh vertices
-        int[] triangles = new int[(res - 1) * (res - 1) * 6];
+        int meshRes = GetMeshResolution(res);
+        float meshSpacingX = size.x / (meshRes - 1);
+        float meshSpacingZ = size.z / (meshRes - 1);
+
+        Debug.Log("Heightmap res : " + res + " | Mesh res : " + meshRes +
+                  " | Triangles : " + ((meshRes - 1) * (meshRes - 1) * 2));
+
+        int[] triangles = new int[(meshRes - 1) * (meshRes - 1) * 6];
         int t = 0;
 
-        Vector3[] vertices = new Vector3[res * res];
-        for (int z = 0; z < res; z++)
+        Vector3[] vertices = new Vector3[meshRes * meshRes];
+        for (int z = 0; z < meshRes; z++)
         {
-            for (int x = 0; x < res; x++)
+            for (int x = 0; x < meshRes; x++)
             {
-                int index = z * res + x;
-                vertices[index] = new Vector3(x * spacingX, heights[z, x] * size.y, z * spacingZ);
+                int index = z * meshRes + x;
+                float u = x / (float)(meshRes - 1);
+                float v = z / (float)(meshRes - 1);
+                float h = data.GetInterpolatedHeight(u, v);
+                vertices[index] = new Vector3(x * meshSpacingX, h, z * meshSpacingZ);
             }
         }
-        Debug.Log("Center : " + vertices[(res / 2) * res + (res / 2)]);
 
-
-        for (int z = 0; z < res - 1; z++)
+        for (int z = 0; z < meshRes - 1; z++)
         {
-            for (int x = 0; x < res - 1; x++)
+            for (int x = 0; x < meshRes - 1; x++)
             {
-                int a = z * res + x;
+                int a = z * meshRes + x;
                 int b = a + 1;
-                int c = a + res;
+                int c = a + meshRes;
                 int d = c + 1;
 
-                triangles[t] = a;
-                t++;
-                triangles[t] = c;
-                t++;
-                triangles[t] = b;
-                t++;
+                triangles[t++] = a;
+                triangles[t++] = c;
+                triangles[t++] = b;
 
-
-                triangles[t] = b;
-                t++;
-                triangles[t] = c;
-                t++;
-                triangles[t] = d;
-                t++;
+                triangles[t++] = b;
+                triangles[t++] = c;
+                triangles[t++] = d;
             }
         }
 
@@ -106,7 +117,6 @@ public class TerrainToMeshWindow : EditorWindow
         mesh.vertices = vertices;
         mesh.triangles = triangles;
         mesh.RecalculateNormals();
-
 
         string path = Application.dataPath + "/" + data.name;
         if (exportFormat == ExportFormat.OBJ)
@@ -164,7 +174,7 @@ public class TerrainToMeshWindow : EditorWindow
         for (int i = 0; i < triangles.Length; i += 3)
         {
             int a = triangles[i] + 1;
-            int b = triangles[i + 2] + 1; 
+            int b = triangles[i + 2] + 1;
             int c = triangles[i + 1] + 1;
             sb.Append("f ")
               .Append(a).Append("//").Append(a).Append(' ')
